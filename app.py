@@ -1,96 +1,252 @@
-amlit as st
-import datetime
+import streamlit as st
+from datetime import datetime
+from io import BytesIO
 
-# --- Trang trí & Cấu hình Trang ---
-st.set_page_config(page_title="Tính Hóa Đơn Trà Sữa", page_icon="🧋", layout="centered")
+# =========================
+# CẤU HÌNH
+# =========================
+st.set_page_config(
+    page_title="Bill Trà Sữa",
+    page_icon="🧋",
+    layout="centered"
+)
 
-st.title("🧋 Ứng Dụng Tính Hóa Đơn Trà Sữa")
-st.markdown("Vui lòng nhập thông tin đơn hàng bên dưới:")
-
-# --- Dữ liệu giá cả ---
-MENU_TEA = {
-    "Trà sữa Truyền thống": 30000,
-    "Trà sữa Ô long": 35000,
-    "Trà sữa Trái cây (Đào/Vải)": 38000,
-    "Trà sữa Matcha": 40000,
-    "Trà sữa Hạt dẻ": 42000
+# =========================
+# DỮ LIỆU MENU
+# =========================
+MENU = {
+    "Trà sữa truyền thống": 30000,
+    "Trà sữa matcha": 35000,
+    "Trà sữa socola": 35000,
+    "Trà sữa dâu": 35000,
+    "Trà sữa khoai môn": 38000,
+    "Trà sữa ô long": 40000,
 }
 
-TOPPING_PRICE = 5000  # Giá mỗi loại topping
+TOPPINGS = {
+    "Trân châu đen": 5000,
+    "Trân châu trắng": 6000,
+    "Thạch dừa": 5000,
+    "Thạch trái cây": 6000,
+    "Pudding trứng": 7000,
+    "Kem cheese": 10000,
+}
 
-# --- Form Nhập Thông Tin ---
-with st.form(key="order_form"):
-    st.subheader("👤 Thông tin khách hàng")
-    customer_name = st.text_input("Tên khách hàng:", value="Khách hàng")
+SUGAR_LEVELS = ["100%", "70%", "0%"]
+ICE_LEVELS = ["100%", "70%", "0%"]
 
-    st.subheader("🧋 Chi tiết món")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        tea_type = st.selectbox("Chọn loại trà sữa:", list(MENU_TEA.keys()))
-        sugar = st.radio("Mức độ đường:", ["100%", "70%", "0%"], horizontal=True)
-    
-    with col2:
-        quantity = st.number_input("Số lượng:", min_value=1, max_value=50, value=1, step=1)
-        ice = st.radio("Mức độ đá:", ["100%", "70%", "0%"], horizontal=True)
 
-    toppings = st.multiselect(
-        "Thêm Topping (5,000 VNĐ / loại):",
-        ["Trân châu đen", "Trân châu trắng", "Thạch trái cây", "Pudding trứng", "Kem Cheese"]
+# =========================
+# HÀM ĐỊNH DẠNG TIỀN
+# =========================
+def format_money(amount):
+    return f"{amount:,.0f} VNĐ".replace(",", ".")
+
+
+# =========================
+# TIÊU ĐỀ
+# =========================
+st.title("🧋 BILL TRÀ SỮA")
+st.caption("Ứng dụng tính hóa đơn trà sữa")
+
+st.divider()
+
+
+# =========================
+# THÔNG TIN KHÁCH HÀNG
+# =========================
+st.subheader("👤 Thông tin khách hàng")
+
+customer_name = st.text_input(
+    "Tên khách hàng",
+    placeholder="Nhập tên khách hàng..."
+)
+
+
+# =========================
+# CHỌN MÓN
+# =========================
+st.subheader("🧋 Chọn trà sữa")
+
+drink = st.selectbox(
+    "Loại trà sữa",
+    list(MENU.keys())
+)
+
+quantity = st.number_input(
+    "Số lượng",
+    min_value=1,
+    max_value=50,
+    value=1,
+    step=1
+)
+
+# =========================
+# TOPPING
+# =========================
+st.subheader("🍡 Chọn topping")
+
+selected_toppings = st.multiselect(
+    "Topping",
+    list(TOPPINGS.keys()),
+    help="Có thể chọn nhiều loại topping"
+)
+
+
+# =========================
+# ĐƯỜNG & ĐÁ
+# =========================
+col1, col2 = st.columns(2)
+
+with col1:
+    sugar = st.selectbox(
+        "🍬 Mức đường",
+        SUGAR_LEVELS
     )
 
-    submit_button = st.form_submit_button(label="🛒 Tính hóa đơn")
+with col2:
+    ice = st.selectbox(
+        "🧊 Mức đá",
+        ICE_LEVELS
+    )
 
-# --- Xử lý tính toán và hiển thị ---
-if submit_button:
-    price_per_tea = MENU_TEA[tea_type]
-    price_topping = len(toppings) * TOPPING_PRICE
-    unit_price = price_per_tea + price_topping
-    total_amount = unit_price * quantity
-    
-    current_time = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    st.success("Tạo hóa đơn thành công!")
-    st.subheader("📋 Chi Tiết Hóa Đơn")
+# =========================
+# TÍNH TIỀN
+# =========================
+drink_price = MENU[drink]
+drink_total = drink_price * quantity
 
-    # Hiển thị thông tin tổng quan
-    st.write(f"**Tên khách hàng:** {customer_name}")
-    st.write(f"**Thời gian:** {current_time}")
-    st.write(f"**Loại trà sữa:** {tea_type} ({price_per_tea:,} VNĐ)")
-    st.write(f"**Số lượng:** {quantity}")
-    st.write(f"**Mức đường:** {sugar} | **Mức đá:** {ice}")
-    
-    if toppings:
-        st.write(f"**Topping chọn thêm:** {', '.join(toppings)} (+{price_topping:,} VNĐ/ly)")
-    else:
-        st.write("**Topping:** Không chọn")
+topping_total_one = sum(
+    TOPPINGS[topping] for topping in selected_toppings
+)
 
-    st.markdown("---")
-    st.subheader(f"💰 Tổng tiền thanh toán: {total_amount:,} VNĐ")
+topping_total = topping_total_one * quantity
 
-    # Nội dung file hóa đơn xuất ra
-    receipt_text = f"""===================================
-        HÓA ĐƠN TRÀ SỮA
-===================================
-Khách hàng   : {customer_name}
-Thời gian    : {current_time}
------------------------------------
-Món          : {tea_type}
-Số lượng     : {quantity}
-Mức đường    : {sugar}
-Mức đá       : {ice}
-Topping      : {', '.join(toppings) if toppings else 'Không có'}
------------------------------------
-Đơn giá ly   : {unit_price:,} VNĐ
-TỔNG CỘNG    : {total_amount:,} VNĐ
-===================================
-Cảm ơn quý khách và hẹn gặp lại!
+grand_total = drink_total + topping_total
+
+
+# =========================
+# HIỂN THỊ KẾT QUẢ
+# =========================
+st.divider()
+
+st.subheader("🧾 Thông tin đơn hàng")
+
+if customer_name.strip():
+    st.write(f"**Khách hàng:** {customer_name}")
+else:
+    st.write("**Khách hàng:** Chưa nhập tên")
+
+st.write(f"**Trà sữa:** {drink}")
+st.write(f"**Số lượng:** {quantity}")
+st.write(f"**Đơn giá:** {format_money(drink_price)}")
+
+if selected_toppings:
+    topping_text = ", ".join(selected_toppings)
+    st.write(f"**Topping:** {topping_text}")
+else:
+    st.write("**Topping:** Không có")
+
+st.write(f"**Mức đường:** {sugar}")
+st.write(f"**Mức đá:** {ice}")
+
+st.divider()
+
+st.write(f"**Tiền trà sữa:** {format_money(drink_total)}")
+st.write(f"**Tiền topping:** {format_money(topping_total)}")
+
+st.subheader(
+    f"💰 Tổng thanh toán: {format_money(grand_total)}"
+)
+
+
+# =========================
+# TẠO NỘI DUNG HÓA ĐƠN
+# =========================
+def create_invoice():
+    now = datetime.now()
+
+    topping_text = ", ".join(selected_toppings) \
+        if selected_toppings else "Không có"
+
+    invoice = f"""
+========================================
+          HÓA ĐƠN TRÀ SỮA
+========================================
+
+Thời gian: {now.strftime("%d/%m/%Y %H:%M:%S")}
+
+Khách hàng: {customer_name if customer_name.strip() else "Khách lẻ"}
+
+----------------------------------------
+THÔNG TIN ĐƠN HÀNG
+----------------------------------------
+
+Trà sữa       : {drink}
+Số lượng      : {quantity}
+Đơn giá       : {format_money(drink_price)}
+
+Topping       : {topping_text}
+Mức đường     : {sugar}
+Mức đá        : {ice}
+
+----------------------------------------
+CHI TIẾT THANH TOÁN
+----------------------------------------
+
+Tiền trà sữa  : {format_money(drink_total)}
+Tiền topping  : {format_money(topping_total)}
+
+----------------------------------------
+TỔNG THANH TOÁN: {format_money(grand_total)}
+----------------------------------------
+
+        CẢM ƠN QUÝ KHÁCH!
+       HẸN GẶP LẠI ❤️
+
+========================================
 """
 
-    # Nút tải file hóa đơn TXT
-    st.download_button(
-        label="📥 Tải hóa đơn (.txt)",
-        data=receipt_text,
-        file_name=f"HoaDon_{customer_name.replace(' ', '_')}.txt",
-        mime="text/plain"
-    )
+    return invoice
+
+
+# =========================
+# THANH TOÁN
+# =========================
+st.divider()
+
+if st.button(
+    "💳 THANH TOÁN",
+    type="primary",
+    use_container_width=True
+):
+
+    if not customer_name.strip():
+        st.warning("Vui lòng nhập tên khách hàng trước khi thanh toán.")
+    else:
+        invoice_content = create_invoice()
+
+        st.success("✅ Thanh toán thành công!")
+
+        st.text_area(
+            "🧾 Hóa đơn",
+            invoice_content,
+            height=450
+        )
+
+        # Tạo file để tải xuống
+        invoice_bytes = invoice_content.encode("utf-8")
+
+        filename = (
+            f"hoa_don_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        )
+
+        st.download_button(
+            label="📥 TẢI HÓA ĐƠN",
+            data=invoice_bytes,
+            file_name=filename,
+            mime="text/plain",
+            use_container_width=True
+        )
